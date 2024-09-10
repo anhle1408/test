@@ -1,28 +1,45 @@
 import { Button, Table } from "antd";
+import { title } from "process";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Configuration = () => {
   const navigate = useNavigate();
-  const [dataSource, setdataSource] = useState();
+  const [dataSource, setdataSource] = useState<any>([]);
   useEffect(() => {
-    const data = localStorage.getItem("listConfig") || "[]";
-    // console.log(1, data);
+    const data = localStorage.getItem("historyConfigs") || "[]";
 
     var parsedData = JSON.parse(data);
+
     setdataSource(parsedData);
+
+    // console.log(1, dataSource);
   }, []);
 
   const columns = [
     {
-      title: "count",
-      dataIndex: "numberOfSquares",
+      title: "No.",
+      render: (text: any, record: any, index: any) => index + 1,
+    },
+
+    {
+      title: "block",
+      dataIndex: "block",
     },
     {
-      title: "Config",
-      dataIndex: "percentage",
+      title: "configs",
+      dataIndex: "configs",
+      render: (data: any) => {
+        var text = data.join("-");
+        return <>{text}</>;
+      },
     },
     {
+      title: "creat time",
+      dataIndex: "created",
+    },
+    {
+      title: "Action",
       dataIndex: "",
       width: "10%",
       render: (data: any) => {
@@ -30,7 +47,10 @@ const Configuration = () => {
           <>
             <Button
               onClick={() => {
-                localStorage.setItem("squareConfig", JSON.stringify(data));
+                localStorage.setItem(
+                  "squareConfigs",
+                  JSON.stringify(data.configs)
+                );
                 navigate("/");
               }}
             >
@@ -42,7 +62,15 @@ const Configuration = () => {
     },
   ];
   return (
-    <div>
+    <div style={{ padding: 20 }}>
+      <Button
+        type="primary"
+        onClick={() => {
+          navigate("/");
+        }}
+      >
+        back
+      </Button>
       <Table dataSource={dataSource} columns={columns} />
     </div>
   );

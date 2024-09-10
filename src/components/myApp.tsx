@@ -1,102 +1,171 @@
 import React, { useState, useEffect } from "react";
-import { InputNumber, Select, Row, Col, Button, Form, Input } from "antd";
+import {
+  InputNumber,
+  Select,
+  Button,
+  Row,
+  Col,
+  Menu,
+  Dropdown,
+  message,
+  Pagination,
+} from "antd";
 import { useNavigate } from "react-router-dom";
-
 const { Option } = Select;
 
 const MyApp = () => {
   const navigate = useNavigate();
+  const [numberOfSquares, setNumberOfSquares] = useState(0);
+  const [squareConfigs, setSquareConfigs] = useState<any>([]);
 
-  const [numberOfSquares, setNumberOfSquares] = useState<number>(0);
-  const [percentage, setPercentage] = useState<number>(100);
+  //thông báo
+  const [messageApi, contextHolder] = message.useMessage();
 
-  // Hàm xử lý thay đổi số lượng ô vuông
-  const handleNumberChange = (value: any) => {
-    setNumberOfSquares(value);
+  const success = () => {
+    messageApi.open({
+      type: "success",
+      content: "saved successfully",
+    });
   };
 
-  // Hàm xử lý thay đổi tỷ lệ
-  const handlePercentageChange = (value: number) => {
-    setPercentage(value);
+  const warning = () => {
+    messageApi.open({
+      type: "warning",
+      content: "configuration exists",
+    });
   };
 
-  // Lưu cấu hình vào localStorage
-  const saveConfig = () => {
-    const config = {
-      numberOfSquares,
-      percentage,
-    };
-    localStorage.setItem("squareConfig", JSON.stringify(config));
-
-    var items = localStorage.getItem("listConfig") || "[]";
-    var parsedItems = JSON.parse(items);
-    parsedItems.push(config);
-    localStorage.setItem("listConfig", JSON.stringify(parsedItems));
-    alert("Cấu hình đã được lưu!");
-  };
-
-  //  lấy cấu hình đã lưu từ localStorage
+  // Lấy cấu hình từ localStorage
   useEffect(() => {
-    const savedConfig = localStorage.getItem("squareConfig");
+    const savedConfig = localStorage.getItem("squareConfigs");
     if (savedConfig) {
-      const { numberOfSquares, percentage } = JSON.parse(savedConfig);
-      setNumberOfSquares(numberOfSquares);
-      setPercentage(percentage);
+      setSquareConfigs(JSON.parse(savedConfig));
+      setNumberOfSquares(JSON.parse(savedConfig).length);
     }
   }, []);
 
-  // Render
-  const renderSquares = () => {
-    return Array.from({ length: numberOfSquares }, (_, index) => (
-      <Col key={index} span={24}>
-        <div
-          style={{
-            backgroundColor: "lightblue",
-            height: "100px",
-            border: "1px solid #000",
-            marginBottom: "10px",
-            width: `${percentage}%`,
-          }}
-        >
-          Square {index + 1}
-        </div>
-      </Col>
-    ));
+  // Thay đổi số lượng ô vuông
+  const handleNumberChange = (value: any) => {
+    setNumberOfSquares(value);
+    setSquareConfigs(Array.from({ length: value }, () => 1));
   };
 
-  return (
-    <div style={{ padding: "20px" }}>
-      <h2>Nhập số nguyên dương</h2>
+  // Thay đổi số phần của mỗi ô vuông
+  const handleSelectChange = (key: any, index: any) => {
+    const newConfigs = [...squareConfigs];
+    newConfigs[index] = key;
+    setSquareConfigs(newConfigs);
+  };
 
-      <InputNumber
-        min={1}
-        value={numberOfSquares}
-        onChange={handleNumberChange}
-        style={{ marginBottom: "20px", marginRight: "10px" }}
-      />
-      <Select
-        value={percentage}
-        onChange={handlePercentageChange}
-        style={{ width: 120, marginBottom: "20px", marginRight: "20px" }}
-      >
-        <Option value={100}>1 (100%)</Option>
-        <Option value={50}>2 (50%)</Option>
-        <Option value={33}>3 (33%)</Option>
-      </Select>
-      <Button type="primary" onClick={saveConfig}>
-        Save
-      </Button>
-      <Button
-        type="primary"
-        onClick={() => {
-          navigate("/configuration");
-        }}
-        style={{ marginLeft: "20px" }}
-      >
-        configuration
-      </Button>
-      <Row gutter={[16, 16]} style={{ marginTop: "20px" }}>
-        {renderSquares()}
+  interface Iconfigs {
+    id: number;
+    block: number;
+    configs: string;
+    created: any;
+  }
+
+  // Lưu cấu hình vào localStorage
+  var items = localStorage.getItem("historyConfigs") || "[]";
+  var parsedItems = JSON.parse(items);
+  const handleSave = () => {
+    // new configs
+    localStorage.setItem("squareConfigs", JSON.stringify(squareConfigs));
+    //time
+    var today = new Date();
+    var date =
+      today.getDate() +
+      "-" +
+      (today.getMonth() + 1) +
+      "-" +
+      today.getFullYear();
+    var time =
+      today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+    var dateTime = date + " " + time;
+    //
+    var data: Iconfigs = {
+      id: squareConfigs.join(""),
+      block: squareConfigs.length,
+      configs: squareConfigs,
+      created: dateTime,
+    };
+    // console.log(12, data);
+
+    // history cấu hình
+
+    // console.log(1, parsedItems);
+
+    let found = parsedItems.some((e: any) => e.id === data.id);
+    if (found) {
+      warning();
+    } else {
+      success();
+      parsedItems.push(data);
+      localStorage.setItem("historyConfigs", JSON.stringify(parsedItems));
+    }
+  };
+
+  const menu = (index: any) => (
+    <Menu onClick={(e) => handleSelectChange(e.key, index)}>
+      <Menu.Item key="1">1</Menu.Item>
+      <Menu.Item key="2">2</Menu.Item>
+      <Menu.Item key="3">3</Menu.Item>
+    </Menu>
+  );
+
+  return (
+    <div style={{ padding: 20 }}>
+      {contextHolder}
+      <h2>Nhập số ô vuông</h2>
+      <div style={{ display: "flex", gap: "20px" }}>
+        <InputNumber
+          min={1}
+          value={numberOfSquares}
+          onChange={handleNumberChange}
+          style={{ marginBottom: 20 }}
+        />
+        <Button type="primary" onClick={handleSave}>
+          Save
+        </Button>
+
+        <Button
+          type="primary"
+          onClick={() => {
+            navigate("/configuration");
+          }}
+        >
+          History
+        </Button>
+      </div>
+
+      <Row gutter={[16, 16]}>
+        {Array.from({ length: numberOfSquares }, (_, index) => (
+          <Col span={24} key={index}>
+            <Dropdown overlay={menu(index)} trigger={["click"]}>
+              <div
+                style={{
+                  marginTop: 20,
+                  display: "flex",
+                  justifyContent: "space-around",
+                }}
+              >
+                {Array.from(
+                  { length: squareConfigs[index] },
+                  (_, partIndex) => (
+                    <div
+                      key={partIndex}
+                      style={{
+                        width: `${100 / squareConfigs[index]}%`,
+                        height: "50px",
+                        backgroundColor: "#1890ff",
+                        border: "2px solid #ffff",
+                      }}
+                    />
+                  )
+                )}
+              </div>
+            </Dropdown>
+          </Col>
+        ))}
       </Row>
     </div>
   );
